@@ -27,6 +27,14 @@ from skillopt_sleep.state import SleepState, _now_iso
 from skillopt_sleep.types import SessionDigest, SleepReport, TaskRecord
 
 
+def _redact_session_digests(digests: List[SessionDigest]) -> List[SessionDigest]:
+    """Remove secret-shaped text before transcript data reaches any miner or backend."""
+    return [
+        SessionDigest(**redact_secrets(digest.to_dict()))
+        for digest in digests
+    ]
+
+
 @dataclass
 class CycleOutcome:
     report: SleepReport
@@ -168,6 +176,8 @@ def run_sleep_cycle(
             since_iso=since,
             limit=max_sessions,
         )
+        if cfg.get("redact_secrets", True):
+            digests = _redact_session_digests(digests)
         n_sessions = len(digests)
         _progress(cfg, f"harvest done: sessions={n_sessions}")
         # When a real backend is configured, use it to mine checkable tasks from

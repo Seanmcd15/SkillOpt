@@ -34,6 +34,22 @@ _SECRET_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"(?i)(Authorization:\s*Bearer\s+)[^\s\"']+"), r"\1[REDACTED]"),
     (re.compile(r"(?i)(Authorization:\s*Basic\s+)[^\s\"']+"), r"\1[REDACTED]"),
     (
+        re.compile(r"(?i)(https?://)([^/@:\s]+):([^/@\s]+)@"),
+        r"\1[REDACTED]:[REDACTED]@",
+    ),
+    (
+        re.compile(
+            r"""(?i)(["']?[A-Za-z0-9_-]*(?:api[_-]?key|token|password|secret)[A-Za-z0-9_-]*["']?\s*:\s*["'])([^"']+)(["'])"""
+        ),
+        r"\1[REDACTED]\3",
+    ),
+    (
+        re.compile(
+            r"""(?i)\b([A-Za-z0-9_-]*(?:api[_-]?key|token|password|secret)[A-Za-z0-9_-]*)(\s*=\s*)([^\s"'`]+)"""
+        ),
+        r"\1\2[REDACTED]",
+    ),
+    (
         re.compile(r"(?i)\b(api[_-]?key|token|password|secret)\b(\s*[:=]\s*)[^\s\"']+"),
         r"\1\2[REDACTED]",
     ),

@@ -555,6 +555,24 @@ class TestGbrainLoader(unittest.TestCase):
 
 
 class TestLlmMiner(unittest.TestCase):
+    def test_cycle_redacts_transcripts_before_mining(self):
+        from skillopt_sleep.cycle import _redact_session_digests
+
+        digest = SessionDigest(
+            session_id="s1",
+            project="/p",
+            user_prompts=['debug {"refresh_token": "live-refresh-secret"}'],
+            assistant_finals=["set AWS_SECRET_ACCESS_KEY=live-aws-secret"],
+            n_user_turns=1,
+            n_assistant_turns=1,
+        )
+
+        sanitized = _redact_session_digests([digest])[0]
+        serialized = json.dumps(sanitized.to_dict())
+        self.assertNotIn("live-refresh-secret", serialized)
+        self.assertNotIn("live-aws-secret", serialized)
+        self.assertIn("REDACTED", serialized)
+
     def test_miner_emits_checkable_tasks(self):
         # a stub backend whose _call returns canned miner JSON => deterministic
         from skillopt_sleep.backend import Backend
@@ -1171,6 +1189,9 @@ class TestDiagnosticsRedaction(unittest.TestCase):
             ("error: used sk-ABCDEFGHIJ1234567890 to call", "sk-ABCDEFGHIJ1234567890"),
             ("Authorization: Bearer eyJhbGciOi.JIUzI1Ni.qwerty", "eyJhbGciOi.JIUzI1Ni.qwerty"),
             ("config api_key=super-secret-value here", "super-secret-value"),
+            ('{"refresh_token": "json-refresh-secret"}', "json-refresh-secret"),
+            ("AWS_SECRET_ACCESS_KEY=aws-secret-value", "aws-secret-value"),
+            ("request https://user:credential-secret@example.com/v1", "credential-secret"),
             ("token: abc123def456ghi", "abc123def456ghi"),
             ("aws AKIAIOSFODNN7EXAMPLE creds", "AKIAIOSFODNN7EXAMPLE"),
             ("github ghp_AbCdEf0123456789AbCdEf0123 push", "ghp_AbCdEf0123456789AbCdEf0123"),
